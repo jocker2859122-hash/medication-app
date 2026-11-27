@@ -1,0 +1,30 @@
+
+*{box-sizing:border-box}
+body{font:16px system-ui,sans-serif;background:#f3f5f8;color:#243047;margin:0}
+main{max-width:640px;margin:auto;padding:20px 16px 45px}
+h1{font-size:25px}
+h2{font-size:18px;margin:0 0 10px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+button,input,select{font:inherit}
+button{background:#365c81;color:white;border:0;border-radius:9px;padding:10px 13px;cursor:pointer}
+button.secondary{background:#e7edf4;color:#243047}
+button:disabled{opacity:.45}
+section{background:white;border:1px solid #dce3eb;border-radius:14px;padding:16px;margin:12px 0}
+label{display:block;margin:9px 0}
+input:not([type=checkbox]){width:100%;padding:9px;border:1px solid #bcc8d4;border-radius:8px}
+input[type=checkbox]{width:20px;height:20px;vertical-align:middle}
+small,.muted{color:#596677}
+p{line-height:1.5}
+ .warn{color:#955300}
+ .line{padding:10px 0;border-bottom:1px solid #e7edf4}
+ .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+ .status-pill{display:inline-flex;align-items:center;gap:6px;background:#e7f1eb;color:#1f5a38;border:1px solid #c8e2d2;border-radius:999px;padding:7px 12px;font-weight:600}
+ .check-action{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #d3dce7;border-radius:999px;background:#f7f9fb;cursor:pointer;color:#243047}
+ .check-action input{margin:0}
+ .action-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ .line{padding:12px 10px;border-radius:8px;margin:5px 0}
+.line.taken{background:#eaf6ed;border-bottom-color:#c8e2d2}
+.line.taken small{color:#3d624b}
+
+[hidden]{display:none!important}
+input[readonly]{background:#eef2f7}

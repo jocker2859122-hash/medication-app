@@ -5,177 +5,18 @@
 <meta name="theme-color" content="#f3f5f8">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
-<title>吃藥紀錄</title>
-<style>
-    * {
-        box-sizing: border-box
-    }
-
-    body {
-        font: 16px system-ui, sans-serif;
-        background: #f3f5f8;
-        color: #243047;
-        margin: 0
-    }
-
-    main {
-        max-width: 640px;
-        margin: auto;
-        padding: 20px 16px 45px
-    }
-
-    h1 {
-        font-size: 25px
-    }
-
-    h2 {
-        font-size: 18px;
-        margin: 0 0 10px
-    }
-
-    nav {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-bottom: 16px
-    }
-
-    button,
-    input,
-    select {
-        font: inherit
-    }
-
-    button {
-        background: #365c81;
-        color: white;
-        border: 0;
-        border-radius: 9px;
-        padding: 10px 13px;
-        cursor: pointer
-    }
-
-    button.secondary {
-        background: #e7edf4;
-        color: #243047
-    }
-
-    button:disabled {
-        opacity: .45
-    }
-
-    section {
-        background: white;
-        border: 1px solid #dce3eb;
-        border-radius: 14px;
-        padding: 16px;
-        margin: 12px 0
-    }
-
-    label {
-        display: block;
-        margin: 9px 0
-    }
-
-    input:not([type=checkbox]) {
-        width: 100%;
-        padding: 9px;
-        border: 1px solid #bcc8d4;
-        border-radius: 8px
-    }
-
-    input[type=checkbox] {
-        width: 20px;
-        height: 20px;
-        vertical-align: middle
-    }
-
-    small,
-    .muted {
-        color: #596677
-    }
-
-    p {
-        line-height: 1.5
-    }
-
-    .warn {
-        color: #955300
-    }
-
-    .line {
-        padding: 10px 0;
-        border-bottom: 1px solid #e7edf4
-    }
-
-    .row {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between
-    }
-
-    .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #e7f1eb;
-        color: #1f5a38;
-        border: 1px solid #c8e2d2;
-        border-radius: 999px;
-        padding: 7px 12px;
-        font-weight: 600
-    }
-
-    .check-action {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border: 1px solid #d3dce7;
-        border-radius: 999px;
-        background: #f7f9fb;
-        cursor: pointer;
-        color: #243047
-    }
-
-    .check-action input {
-        margin: 0
-    }
-
-    .action-group {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap
-    }
-
-    .line {
-        padding: 12px 10px;
-        border-radius: 8px;
-        margin: 5px 0
-    }
-
-    .line.taken {
-        background: #eaf6ed;
-        border-bottom-color: #c8e2d2
-    }
-
-    .line.taken small {
-        color: #3d624b
-    }
-</style>
+<title>用藥紀錄</title>
+<link rel="stylesheet" href="style.css">
 <main>
-    <h1>吃藥記錄 <small>V0.5</small></h1>
+    <h1><span id="app-title">用藥紀錄</span> <small>V0.6</small></h1>
     <nav id="nav"></nav>
     <div id="view"></div>
     <p class="muted"><small>提醒不代表可以服藥；請依醫囑確認間隔、次數及交互作用。此版本不會在背景自動通知。</small></p>
 </main>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="strings.js"></script>
 <script src="cloud.js"></script>
-<script>
-    const $ = id => document.getElementById(id), labels = ['早餐後', '午餐後', '晚餐後', '睡前']; const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); const day = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; const time = x => new Date(x).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); const qty = n => { let v = Math.round((+n) * 1000) / 1000; return Number.isInteger(v) ? String(v) : String(v) }; const unitLabel = m => { let u = String(m?.unitName ?? '').trim(); return !u || /^\d+(?:\.\d+)?$/.test(u) ? '份' : u }; const qtyText = (n, m) => `${qty(n)} ${esc(unitLabel(m))}`; let data = { meds: [], logs: [], settings: { morning: '09:00', night: '23:00', interval: 5 } }; try { const raw = localStorage.getItem('med-v1'); if (raw) data = JSON.parse(raw) } catch (e) { alert('無法讀取資料，請先備份或重新載入。') } let tab = 'today', edit = null, selectedDay = day(); function save() { try { localStorage.setItem('med-v1', JSON.stringify(data)); setTimeout(() => cloud.run(), 0); return true } catch (e) { alert('儲存失敗，請勿依賴本次紀錄。'); return false } } function go(t) { tab = t; edit = null; render() } function remaining(m) { if (m.stock == null) return null; return Math.round((m.stock - data.logs.filter(l => l.id === m.id && l.stockGen === m.stockGen).reduce((a, l) => a + (l.units || 0), 0)) * 1000) / 1000 } function active(m, d) { return m.active && !m.resume && (!m.start || m.start <= d) && (!m.end || m.end >= d) } function eligible(m, s, d) { return active(m, d) && m.slots.includes(s) && !(d === m.start && s < (m.firstSlot ?? 0)) && (remaining(m) == null || remaining(m) >= (m.units || 1)) } function medsFor(s, d) { return data.meds.filter(m => logFor(m.id, s, d) || eligible(m, s, d)) } function projection(m) { let r = remaining(m); if (r == null || r <= 0 || !m.active || m.resume) return ''; let n = Math.ceil(r / (m.units || 1)), d = new Date(Math.max(new Date(day() + 'T00:00:00').getTime(), new Date((m.start || day()) + 'T00:00:00').getTime())); for (let i = 0; i < 3660; i++, d.setDate(d.getDate() + 1)) { let date = day(d); if (m.end && date > m.end) return '超過設定療程期限'; for (let s of m.slots.slice().sort((a, b) => a - b)) { if (date === m.start && s < (m.firstSlot ?? 0) || logFor(m.id, s, date)) continue; if (--n === 0) return date + ' ' + labels[s] } } return '超出估算範圍' } function stockInfo(m) { let r = remaining(m); return r == null ? '不追蹤藥量' : `剩餘：${qtyText(r, m)} ／ 本輪總量：${qtyText(m.stock, m)}；${r < (m.units || 1) ? '不足一次用量，待確認' : projection(m) ? '預計最後一份：' + projection(m) : '暫停估算'}` } function stockActions(m) { return `<p><button class=secondary onclick="refill(${m.id})">補充／開始新一輪</button> ${m.mode === 'cycle' ? `<button class=secondary onclick="pauseCycle(${m.id})">設定休藥／暫停</button>` : ''}</p>${m.resume ? `<p class=warn>預計確認日期：${esc(m.resume)}。${day() >= m.resume ? '已到確認日，請依醫囑確認是否恢復。' : ''}</p><button class=secondary onclick="resumeMed(${m.id})">確認恢復剩餘藥量</button>` : ''}` } function refill(id) { let m = data.meds.find(x => x.id === id); if (!confirm('已依醫囑確認補充藥量或開始下一輪？')) return; let v = prompt('輸入新增藥量（' + unitLabel(m) + '）；會加上尚未用完的藥量', ''); if (v === null || !v.trim() || !Number.isFinite(+v) || +v <= 0) return; let r = Math.max(0, remaining(m) || 0); m.stock = r + (+v); m.stockGen = Date.now(); m.active = true; m.resume = ''; save(); render() } function pauseCycle(id) { let m = data.meds.find(x => x.id === id); let d = new Date(); d.setDate(d.getDate() + (m.restDays || 7)); let v = prompt('依醫囑輸入預計確認恢復日期（YYYY-MM-DD）；不會自動恢復', day(d)); if (v === null || !/^\d{4}-\d{2}-\d{2}$/.test(v) || v < day() || !Number.isFinite(Date.parse(v))) return; m.resume = v; m.active = false; save(); render() } function resumeMed(id) { let m = data.meds.find(x => x.id === id); if (confirm('已向醫師或藥師確認恢復方式？保留剩餘藥量，不會自動補吃。')) { m.resume = ''; m.active = true; save(); render() } } function logFor(id, s, d) { return data.logs.find(l => l.id === id && l.slot === s && l.day === d) } function planned(s, d) { if (s === 0 || s === 3) return new Date(`${d}T${s === 0 ? data.settings.morning : data.settings.night}:00`); let prev = medsFor(s - 1, d); if (!prev.length) { let base = planned(s - 1, d); return base ? new Date(base.getTime() + data.settings.interval * 3600000) : null; } let logs = prev.map(m => logFor(m.id, s - 1, d)); if (logs.some(l => !l)) return null; return new Date(Math.max(...logs.map(l => l.at)) + data.settings.interval * 3600000) } function latest(id) { return data.logs.filter(l => l.id === id).sort((a, b) => b.at - a.at)[0] } function record(ids, s) { let now = Date.now(), d = selectedDay; if (d !== day() && !confirm('正在記錄非今日的用藥時段，實際時間仍為現在。確定？')) return; let pending = ids.filter(id => !logFor(id, s, d) && eligible(data.meds.find(m => m.id === id), s, d)); if (!pending.length) return; let warnings = pending.map(id => { let m = data.meds.find(m => m.id === id), l = latest(id); return l && m.min > 0 && now - l.at < m.min * 3600000 ? m.name + '：距上次紀錄不足設定間隔' : null }).filter(Boolean); if (warnings.length && !confirm(warnings.join('\n') + '\n請確認醫囑。只有已實際服用才記錄，確定記錄？')) return; if (!confirm('確認已實際服用所選藥物？')) return; for (let id of pending) { let m = data.meds.find(m => m.id === id); data.logs.push({ id, name: m.name, dose: m.dose, slot: s, day: d, at: now, units: m.units || 1, stockGen: m.stockGen }) } save(); render() } function markTaken(box, id, s) { if (!box.checked) return; record([id], s); render() } function undo(id, s) { if (confirm('取消這筆服藥紀錄？這不代表沒有服藥，請先確認。')) { data.logs = data.logs.filter(l => !(l.id === id && l.slot === s && l.day === selectedDay)); save(); render() } } function render() { $('nav').innerHTML = [['today', '今日用藥'], ['meds', '藥物管理'], ['history', '歷史紀錄'], ['settings', '設定／備份']].map(([k, v]) => `<button class="${tab === k ? '' : 'secondary'}" onclick="go('${k}')">${v}</button>`).join(''); let h = ''; if (tab === 'today') { h = `<label>用藥日期<input type=date value="${selectedDay}" onchange="selectedDay=this.value;render()"></label>`; for (let m of data.meds.filter(m => m.resume || m.active && remaining(m) != null && remaining(m) < (m.units || 1))) h += `<section><h2>${esc(m.name)}・待確認</h2><small>${stockInfo(m)}</small>${stockActions(m)}</section>`; if (!data.meds.length) h += '<section>尚未新增藥物。請先到「藥物管理」新增。</section>'; labels.forEach((label, s) => { let ms = medsFor(s, selectedDay), p = planned(s, selectedDay), all = ms.length && ms.every(m => logFor(m.id, s, selectedDay)); h += `<section><h2>${label} ${all ? '・已完成' : ''}</h2><small>${p ? '預定提醒：' + time(p) : '等待上一時段完成；若無上一時段用藥，請依醫囑自行確認'}</small>${p && day(p) !== selectedDay ? '<p class=warn>提醒已跨日，請確認醫囑，不自動補吃。</p>' : ''}`; for (let m of ms) { let l = logFor(m.id, s, selectedDay), last = latest(m.id); h += `<div class="line${l ? ' taken' : ''}"><div class=row><span>${esc(m.name)} ${esc(m.dose)}</span><div class=action-group>${l ? `<span class=status-pill>✓ 已服用</span><button class=secondary onclick="undo(${m.id},${s})">取消紀錄</button>` : `<label class=check-action><input type=checkbox onchange="markTaken(this,${m.id},${s})"> 已服用</label>`}</div></div><small>${l ? '已記錄 ' + time(l.at) : last ? '上次紀錄 ' + time(last.at) : '尚未記錄'}</small><div><small>${stockInfo(m)}</small></div>${!l && last && m.min > 0 && Date.now() - last.at < m.min * 3600000 ? `<div class=warn>設定間隔未滿，最早間隔時間 ${time(last.at + m.min * 3600000)}（非服藥許可）</div>` : ''}</div>` } h += ms.length ? `<p><button ${all ? 'disabled' : ''} onclick="record([${ms.map(m => m.id)}],${s})">本時段剩餘藥物皆已服用</button></p>` : '<p class=muted>無用藥</p>'; if (p && !all && ms.some(m => eligible(m, s, selectedDay) && !logFor(m.id, s, selectedDay))) h += `<button class=secondary onclick="shortcut(${s},${p.getTime()})">交給 iOS 捷徑建立提醒</button>`; h += '</section>' }) } else if (tab === 'meds') { if (edit === null) { h = '<button onclick="edit=-1;render()">＋ 新增藥物</button>'; for (let m of data.meds) h += `<section><h2>${esc(m.name)}</h2><p>${esc(m.dose)}・${m.slots.map(s => labels[s]).join('、')}</p><small>${m.active ? '啟用' : '暫停'} ${esc(m.start || '')} ${m.end ? '至 ' + esc(m.end) : ''}</small><p><button class=secondary onclick="edit=${m.id};render()">修改</button> <button class=secondary onclick="toggle(${m.id})">${m.active ? '暫停' : '恢復'}</button></p><small>${stockInfo(m)}</small>${stockActions(m)}</section>` } else { let m = data.meds.find(m => m.id === edit) || { name: '', dose: '', slots: [], start: day(), end: '', min: 0 }; h = `<section><h2>${edit === -1 ? '新增' : '修改'}藥物</h2><form onsubmit="submitMed(event)"><label>藥名<input id=name required value="${esc(m.name)}"></label><label>劑量（依醫囑）<input id=dose value="${esc(m.dose)}"></label>${labels.map((l, i) => `<label><input type=checkbox name=slot value=${i} ${m.slots.includes(i) ? 'checked' : ''}> ${l}</label>`).join('')}<label>開始日期<input type=date id=start value="${esc(m.start)}"></label><label>首次服藥時段<select id=firstSlot>${labels.map((l, i) => `<option value=${i} ${(m.firstSlot ?? 0) === i ? 'selected' : ''}>${l}</option>`).join('')}</select></label><label>管理模式<select id=mode>${[['long', '長期用藥'], ['finite', '定量療程'], ['cycle', '週期用藥']].map(([v, l]) => `<option value=${v} ${(m.mode || 'long') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label><label>目前剩餘藥量（不追蹤請留空）<input type=number min=0 step=0.001 id=stock value="${remaining(m) ?? ''}"></label><label>每次消耗藥量<input type=number min=0.001 step=0.001 id=units required value="${m.units || 1}"></label><label>藥量單位<input id=unitName value="${esc(unitLabel(m))}" placeholder="顆、包"></label><label>預設休藥天數（僅週期模式確認用）<input type=number min=0 max=365 id=restDays value="${m.restDays ?? 7}"></label><small>修改剩餘量會重新建立庫存基準，保留舊紀錄。休藥與恢復須依醫囑確認。</small><label>結束日期（定量療程可留空）<input type=date id=end value="${esc(m.end)}"></label><label>醫囑最短間隔（小時，未知填 0）<input type=number id=min min=0 max=168 step=0.5 value="${m.min}"></label><button>儲存</button> <button type=button class=secondary onclick="edit=null;render()">取消</button></form></section>` } } else if (tab === 'history') { h = data.logs.slice().sort((a, b) => b.at - a.at).map(l => `<section><b>${esc(l.name)}</b> ${esc(l.dose)}<p>${esc(l.day)}・${labels[l.slot]}<br>實際紀錄：${time(l.at)}</p></section>`).join('') || '<section>尚無紀錄</section>' } else { h = `<section><h2>提醒設定</h2><form onsubmit="settings(event)"><label>早餐提醒<input type=time id=morning required value="${data.settings.morning}"></label><label>睡前提醒<input type=time id=night required value="${data.settings.night}"></label><label>三餐提醒間隔（小時）<input type=number id=interval min=0.5 max=24 step=0.5 required value="${data.settings.interval}"></label><button>儲存</button></form></section><section><h2>備份</h2><button onclick="backup()">匯出 JSON</button><label>匯入備份<input type=file accept=".json,application/json" onchange="restore(this)"></label><small>匯入會取代目前資料。請定期備份至檔案或 Google Drive；瀏覽器清除資料可能造成紀錄遺失。</small></section>` } $('view').innerHTML = h + (tab === 'settings' ? cloud.ui() : '') } function submitMed(e) { e.preventDefault(); let slots = [...document.querySelectorAll('[name=slot]:checked')].map(x => +x.value); if (!slots.length) return alert('請選擇時段'); if ($('end').value && $('start').value > $('end').value) return alert('日期順序錯誤'); let old = data.meds.find(m => m.id === edit), m = { id: old?.id || Date.now(), name: $('name').value.trim(), dose: $('dose').value, slots, start: $('start').value, end: $('end').value, min: +$('min').value, active: old?.active ?? true, firstSlot: +$('firstSlot').value, mode: $('mode').value, stock: $('stock').value === '' ? null : +$('stock').value, units: +$('units').value, unitName: (() => { let u = $('unitName').value.trim(); return !u || /^\d+(?:\.\d+)?$/.test(u) ? '份' : u })(), restDays: +$('restDays').value, resume: old?.resume || '', stockGen: Date.now() }; if (m.mode !== 'long' && m.stock == null) return alert('請輸入剩餘藥量'); if (old && m.stock === remaining(old)) { m.stock = old.stock ?? null; m.stockGen = old.stockGen } if (!m.name) return; if (old) data.meds = data.meds.map(x => x.id === edit ? m : x); else data.meds.push(m); save(); edit = null; render() } function toggle(id) { let m = data.meds.find(x => x.id === id); if (confirm((m.active ? '暫停' : '恢復') + '顯示此用藥？請依醫囑。')) { if (m.resume && !m.active) return resumeMed(id); m.active = !m.active; save(); render() } } function settings(e) { e.preventDefault(); data.settings = { morning: $('morning').value, night: $('night').value, interval: +$('interval').value }; save(); render() } function backup() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'medication-' + day() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000) } async function restore(el) { try { let x = JSON.parse(await el.files[0].text()); if (!Array.isArray(x.meds) || !Array.isArray(x.logs) || !x.settings || !x.meds.every(m => Number.isFinite(m.id) && typeof m.name === 'string' && Array.isArray(m.slots) && m.slots.every(s => Number.isInteger(s) && s >= 0 && s < 4)) || !x.logs.every(l => Number.isFinite(l.at) && Number.isFinite(l.id)) || !/^\d\d:\d\d$/.test(x.settings.morning) || !/^\d\d:\d\d$/.test(x.settings.night) || !(x.settings.interval > 0)) throw Error(); if (confirm('取代目前所有資料？')) { data = x; save(); render() } } catch (e) { alert('備份格式無效') } } function shortcut(s, at) { let p = new Date(at); if (at <= Date.now()) return alert('提醒時間已過，請自行確認用藥。'); let input = JSON.stringify({ title: '用藥確認 ' + labels[s] + ' ' + selectedDay, date: p.toISOString() }); location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('建立用藥提醒') + '&input=text&text=' + encodeURIComponent(input) } render(); if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
-</script>
+<script src="reminders.js"></script>
+<script src="app.js"></script>
 
 </html>

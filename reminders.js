@@ -1,0 +1,1 @@
+function shortcut(s,at){let p=new Date(at);if(at<=Date.now())return alert('提醒時間已過，請自行確認用藥。');let input=JSON.stringify({title:'用藥確認 '+['早餐後','午餐後','晚餐後','睡前'][s]+' '+selectedDay,date:p.toISOString()});location.href='shortcuts://run-shortcut?name='+encodeURIComponent('建立用藥提醒')+'&input=text&text='+encodeURIComponent(input)}
