@@ -1,6 +1,6 @@
 // 修改右側文字即可。slots 請保留四個時段與順序。
 const UI_TEXT = {
-  "appTitle": "用藥紀錄",
+  "appTitle": "吃藥紀錄",
   "today": "今日用藥",
   "medications": "藥物管理",
   "history": "歷史紀錄",
@@ -19,9 +19,13 @@ const UI_TEXT = {
   "directQuantity": "直接輸入剩餘藥量",
   "daysQuantity": "依處方天數自動計算",
   "daysSupply": "處方天數（幾天份）",
-  "estimatedQuantity": "計算藥量",
+  "estimatedQuantity": "處方總藥量",
+  "stockPreview": "目前剩餘藥量",
+  "alreadyUsed": "已消耗藥量（自動計算時扣除，依實際確認）",
+  "invalidUsed": "已消耗量不可超過處方總量",
+  "manualHint": "可直接修改剩餘藥量，系統會切換成手動模式。編輯既有藥物預設保留庫存。",
   "estimatedLast": "預計最後一次服藥",
-  "quantityHint": "天數 × 每日服藥次數 × 每次消耗量。僅估算藥量與時段，不會自動延長處方；預計日期依已記錄服藥更新。",
+  "quantityHint": "天數 × 每日服藥次數 × 每次消耗量。開始日期與首次服藥時段決定預計用完時間；不會因日期經過而假設已服用。過去已吃的藥請依實際剩餘量確認。預估從今日或未來開始日計算，不代表應補吃或延長處方。",
   "stock": "目前剩餘藥量（不追蹤請留空）",
   "units": "每次消耗藥量",
   "unitName": "藥量單位",
